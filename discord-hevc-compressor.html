@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discord HEVC Compressor</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=boska@500,700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem;
+      --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem; --space-20: 5rem;
+      --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9; --color-surface-offset:#edeae5;
+      --color-text:#28251d; --color-text-muted:#6d6a62; --color-text-faint:#908d86; --color-text-inverse:#f9f8f4;
+      --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-primary-highlight:#cedcd8; --color-border:#d4d1ca;
+      --color-success:#437a22; --color-warning:#964219; --color-error:#a12c7b;
+      --radius-sm:0.375rem; --radius-md:0.625rem; --radius-lg:1rem; --radius-xl:1.25rem; --radius-full:9999px;
+      --shadow-sm:0 1px 2px rgba(40,37,29,.06); --shadow-md:0 8px 24px rgba(40,37,29,.10); --shadow-lg:0 20px 48px rgba(40,37,29,.14);
+      --font-display:'Boska', Georgia, serif; --font-body:'Satoshi', Inter, sans-serif;
+      --transition:180ms cubic-bezier(.16,1,.3,1);
+      --content:1180px;
+    }
+    [data-theme="dark"] {
+      --color-bg:#171614; --color-surface:#1c1b19; --color-surface-2:#201f1d; --color-surface-offset:#262422;
+      --color-text:#cdccca; --color-text-muted:#a4a29b; --color-text-faint:#77756f; --color-text-inverse:#2b2a28;
+      --color-primary:#4f98a3; --color-primary-hover:#227f8b; --color-primary-highlight:#313b3b; --color-border:#393836;
+      --color-success:#6daa45; --color-warning:#bb653b; --color-error:#d163a7;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.2); --shadow-md:0 8px 24px rgba(0,0,0,.28); --shadow-lg:0 20px 48px rgba(0,0,0,.36);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth}
+    body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 28%),
+      radial-gradient(circle at bottom right, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 24%),
+      var(--color-bg); color:var(--color-text)}
+    img,video,canvas,svg{display:block;max-width:100%;height:auto}
+    button,input,select{font:inherit;color:inherit}
+    button{cursor:pointer;border:none;background:none}
+    a{color:inherit}
+    :focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm)}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .app{max-width:var(--content);margin:0 auto;padding:var(--space-4)}
+    .skip{position:absolute;left:-999px;top:0}
+    .skip:focus{left:1rem;top:1rem;background:var(--color-primary);color:var(--color-text-inverse);padding:.75rem 1rem;border-radius:var(--radius-full);z-index:100}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding-block:var(--space-4) var(--space-8)}
+    .brand{display:flex;align-items:center;gap:var(--space-3);font-weight:700}
+    .brand svg{width:42px;height:42px;color:var(--color-primary)}
+    .brand-copy strong{display:block;font-size:var(--text-base)}
+    .brand-copy span{display:block;font-size:var(--text-xs);color:var(--color-text-muted)}
+    .theme-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:.65rem;border-radius:var(--radius-full);border:1px solid color-mix(in srgb, var(--color-text) 12%, transparent);background:var(--color-surface);box-shadow:var(--shadow-sm)}
+    .hero{display:grid;grid-template-columns:1.08fr .92fr;gap:var(--space-8);align-items:start}
+    .hero-copy{padding:var(--space-8);background:color-mix(in srgb, var(--color-surface) 82%, transparent);backdrop-filter:blur(16px);border:1px solid color-mix(in srgb, var(--color-text) 9%, transparent);border-radius:var(--radius-xl);box-shadow:var(--shadow-md)}
+    .eyebrow{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .8rem;border-radius:var(--radius-full);background:var(--color-primary-highlight);color:var(--color-primary);font-size:var(--text-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:var(--space-4)}
+    h1{font-family:var(--font-display);font-size:var(--text-xl);line-height:1.02;letter-spacing:-.02em;max-width:12ch}
+    .hero p{margin-top:var(--space-4);max-width:58ch;color:var(--color-text-muted)}
+    .hero-points{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);margin-top:var(--space-6)}
+    .pill{padding:.85rem 1rem;border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid color-mix(in srgb, var(--color-text) 8%, transparent);font-size:var(--text-sm)}
+    .panel{background:var(--color-surface);border:1px solid color-mix(in srgb, var(--color-text) 9%, transparent);border-radius:var(--radius-xl);box-shadow:var(--shadow-md)}
+    .compressor{padding:var(--space-6)}
+    .dropzone{display:grid;place-items:center;min-height:230px;padding:var(--space-8);border:1.5px dashed color-mix(in srgb, var(--color-primary) 35%, var(--color-border));border-radius:calc(var(--radius-xl) - var(--space-3));background:linear-gradient(180deg, color-mix(in srgb, var(--color-primary-highlight) 55%, transparent), transparent)}
+    .dropzone.dragover{background:linear-gradient(180deg, color-mix(in srgb, var(--color-primary-highlight) 78%, transparent), transparent);border-color:var(--color-primary)}
+    .dropzone strong{display:block;font-size:var(--text-lg);margin-bottom:.3rem}
+    .dropzone p{color:var(--color-text-muted);text-align:center;max-width:36ch}
+    .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-5)}
+    .field{display:flex;flex-direction:column;gap:.45rem}
+    .field label{font-size:var(--text-sm);font-weight:700}
+    .field input,.field select{min-height:48px;padding:.8rem .95rem;border-radius:var(--radius-md);border:1px solid color-mix(in srgb, var(--color-text) 10%, transparent);background:var(--color-surface-2)}
+    .field small{font-size:var(--text-xs);color:var(--color-text-muted)}
+    .actions{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-5)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;min-height:46px;padding:.85rem 1.15rem;border-radius:var(--radius-full);font-size:var(--text-sm);font-weight:700;border:1px solid transparent;transition:transform var(--transition), background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition)}
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:var(--color-primary);color:var(--color-text-inverse)}
+    .btn-primary:hover{background:var(--color-primary-hover)}
+    .btn-secondary{background:var(--color-surface-2);border-color:color-mix(in srgb, var(--color-text) 12%, transparent)}
+    .btn[disabled]{opacity:.55;cursor:not-allowed;transform:none}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);margin-top:var(--space-5)}
+    .stat{padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)}
+    .stat .label{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted)}
+    .stat strong{display:block;margin-top:.35rem;font-size:var(--text-lg)}
+    .status{margin-top:var(--space-4);padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid color-mix(in srgb, var(--color-text) 8%, transparent);font-size:var(--text-sm);white-space:pre-wrap}
+    .progress-wrap{margin-top:var(--space-4)}
+    progress{width:100%;height:12px;border:none;border-radius:999px;overflow:hidden;background:var(--color-surface-offset)}
+    progress::-webkit-progress-bar{background:var(--color-surface-offset)}
+    progress::-webkit-progress-value{background:linear-gradient(90deg,var(--color-primary),color-mix(in srgb, var(--color-primary) 70%, white))}
+    progress::-moz-progress-bar{background:var(--color-primary)}
+    .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+    .meta-card{padding:var(--space-4);border-radius:var(--radius-lg);background:var(--color-surface-2);border:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)}
+    .meta-card h2{font-size:var(--text-sm);margin-bottom:var(--space-2)}
+    .mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1,'lnum' 1}
+    .tips{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-top:var(--space-8)}
+    .tips .panel{padding:var(--space-5)}
+    .tips h2{font-size:var(--text-lg);margin-bottom:var(--space-2)}
+    .tips ul{list-style:none;display:grid;gap:var(--space-3);color:var(--color-text-muted)}
+    .tips li{padding-left:1.15rem;position:relative}
+    .tips li::before{content:'•';position:absolute;left:0;color:var(--color-primary)}
+    footer{padding:var(--space-10) 0 var(--space-4);color:var(--color-text-muted);font-size:var(--text-sm)}
+    .hidden{display:none !important}
+    @media (max-width: 920px){
+      .hero{grid-template-columns:1fr}
+      .controls,.stats,.tips,.meta{grid-template-columns:1fr}
+      .hero-points{grid-template-columns:1fr}
+      .hero-copy,.compressor{padding:var(--space-5)}
+    }
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip">Skip to content</a>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="Discord HEVC Compressor logo">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+          <path d="M11 28c0-10.5 8.5-19 19-19h9c7.2 0 13 5.8 13 13 0 6.1-4.2 11.2-9.9 12.6 3.8 2.5 6.3 6.8 6.3 11.7 0 4.7-3.8 8.5-8.5 8.5H29c-10 0-18-8-18-18v-8.8Z"/>
+          <path d="M24 31h18"/>
+          <path d="M24 41h13"/>
+        </svg>
+        <div class="brand-copy">
+          <strong>Discord HEVC Compressor</strong>
+          <span>ffmpeg.wasm in-browser encoder</span>
+        </div>
+      </div>
+      <button class="theme-btn" data-theme-toggle aria-label="Switch color theme"></button>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-copy panel">
+          <span class="eyebrow">Web app • ffmpeg • HEVC</span>
+          <h1>Compress clips for Discord with HEVC right in your browser.</h1>
+          <p>This tool uses ffmpeg.wasm in the browser, so your file stays local on your device. Pick a Discord upload target, tune quality, and export an HEVC-encoded MP4 without sending the video to a server.</p>
+          <div class="hero-points" role="list" aria-label="Highlights">
+            <div class="pill" role="listitem">Local processing with ffmpeg.wasm</div>
+            <div class="pill" role="listitem">HEVC / H.265 video output</div>
+            <div class="pill" role="listitem">Discord size targets and safety margin</div>
+            <div class="pill" role="listitem">Optional audio removal for extra savings</div>
+          </div>
+        </div>
+
+        <section class="compressor panel" aria-labelledby="compressor-title">
+          <h2 id="compressor-title" class="sr-only">Compressor</h2>
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Select a video file">
+            <div>
+              <strong>Drop a video here</strong>
+              <p>or click to choose an MP4, MOV, MKV, or WebM file. Best on desktop Chrome or Edge with plenty of free RAM.</p>
+            </div>
+          </div>
+          <input id="fileInput" class="hidden" type="file" accept="video/*,.mkv,.mov,.mp4,.webm" />
+
+          <div class="controls">
+            <div class="field">
+              <label for="targetSize">Discord target size</label>
+              <select id="targetSize">
+                <option value="8">8 MB</option>
+                <option value="10">10 MB</option>
+                <option value="25" selected>25 MB</option>
+                <option value="50">50 MB</option>
+                <option value="100">100 MB</option>
+              </select>
+              <small>Choose the upload limit you want to hit.</small>
+            </div>
+            <div class="field">
+              <label for="margin">Safety margin</label>
+              <select id="margin">
+                <option value="0.9" selected>90% of target</option>
+                <option value="0.92">92% of target</option>
+                <option value="0.95">95% of target</option>
+              </select>
+              <small>Leaves room so the final file stays under the cap.</small>
+            </div>
+            <div class="field">
+              <label for="preset">HEVC preset</label>
+              <select id="preset">
+                <option value="veryfast">Very fast</option>
+                <option value="faster">Faster</option>
+                <option value="fast" selected>Fast</option>
+                <option value="medium">Medium</option>
+                <option value="slow">Slow</option>
+              </select>
+              <small>Slower presets usually compress better, but take longer.</small>
+            </div>
+            <div class="field">
+              <label for="audioMode">Audio</label>
+              <select id="audioMode">
+                <option value="aac-64" selected>AAC 64 kbps</option>
+                <option value="aac-96">AAC 96 kbps</option>
+                <option value="copy">Copy original if possible</option>
+                <option value="none">No audio</option>
+              </select>
+              <small>Lower audio bitrate helps tiny uploads.</small>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="loadBtn" class="btn btn-secondary">Load encoder</button>
+            <button id="compressBtn" class="btn btn-primary" disabled>Compress video</button>
+            <button id="downloadBtn" class="btn btn-secondary" disabled>Download output</button>
+          </div>
+
+          <div class="stats" aria-live="polite">
+            <div class="stat"><span class="label">Input</span><strong id="inputSize">—</strong></div>
+            <div class="stat"><span class="label">Target</span><strong id="targetLabel">25 MB</strong></div>
+            <div class="stat"><span class="label">Estimated bitrate</span><strong id="bitrateLabel">—</strong></div>
+          </div>
+
+          <div class="progress-wrap">
+            <progress id="progress" max="1" value="0"></progress>
+          </div>
+          <div id="status" class="status" aria-live="polite">Choose a video, then load the encoder.</div>
+
+          <div class="meta">
+            <div class="meta-card">
+              <h2>Selected file</h2>
+              <div id="fileMeta" class="mono">None yet.</div>
+            </div>
+            <div class="meta-card">
+              <h2>Output details</h2>
+              <div id="outputMeta" class="mono">No output yet.</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="tips">
+        <article class="panel">
+          <h2>Best settings</h2>
+          <ul>
+            <li>For short gameplay clips, 25 MB with Fast preset is a good first try.</li>
+            <li>If the result still looks too soft, raise the upload target or switch to Medium.</li>
+            <li>For meme clips or screen recordings, turning audio off can save a lot of space.</li>
+            <li>If a clip is still too large, trim it first or reduce frame rate to 30 fps in code.</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h2>Reality check</h2>
+          <ul>
+            <li>HEVC can shrink files well, but browser-side encoding is heavy and may be slow on weak laptops.</li>
+            <li>Very large videos can run into browser memory limits. This works best for short Discord clips.</li>
+            <li>If you want maximum compatibility, add an H.264 mode later as a fallback.</li>
+            <li>You can host this as a static site because everything runs client-side.</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      Built for local, browser-based Discord compression with ffmpeg.wasm and HEVC.
+    </footer>
+  </div>
+
+  <script type="module">
+    import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+    import { fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
+    const html = document.documentElement;
+    const themeBtn = document.querySelector('[data-theme-toggle]');
+    let theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const setTheme = () => {
+      html.setAttribute('data-theme', theme);
+      themeBtn.innerHTML = theme === 'dark'
+        ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+      themeBtn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+    };
+    themeBtn.addEventListener('click', () => { theme = theme === 'dark' ? 'light' : 'dark'; setTheme(); });
+    setTheme();
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const loadBtn = document.getElementById('loadBtn');
+    const compressBtn = document.getElementById('compressBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const targetSize = document.getElementById('targetSize');
+    const margin = document.getElementById('margin');
+    const preset = document.getElementById('preset');
+    const audioMode = document.getElementById('audioMode');
+    const inputSize = document.getElementById('inputSize');
+    const targetLabel = document.getElementById('targetLabel');
+    const bitrateLabel = document.getElementById('bitrateLabel');
+    const fileMeta = document.getElementById('fileMeta');
+    const outputMeta = document.getElementById('outputMeta');
+    const status = document.getElementById('status');
+    const progress = document.getElementById('progress');
+
+    let ffmpeg = null;
+    let ffmpegReady = false;
+    let selectedFile = null;
+    let outputBlob = null;
+    let outputName = null;
+
+    const fmtBytes = (bytes) => {
+      if (!Number.isFinite(bytes)) return '—';
+      const units = ['B','KB','MB','GB'];
+      let i = 0, n = bytes;
+      while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+      return `${n.toFixed(n >= 100 || i === 0 ? 0 : n >= 10 ? 1 : 2)} ${units[i]}`;
+    };
+
+    const fmtSecs = (secs) => {
+      if (!Number.isFinite(secs)) return 'unknown duration';
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = Math.round(secs % 60);
+      return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+    };
+
+    const setStatus = (msg) => { status.textContent = msg; };
+
+    const probeDuration = (file) => new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.src = URL.createObjectURL(file);
+      video.onloadedmetadata = () => {
+        const duration = Number.isFinite(video.duration) ? video.duration : NaN;
+        URL.revokeObjectURL(video.src);
+        resolve(duration);
+      };
+      video.onerror = () => resolve(NaN);
+    });
+
+    async function updateFileUI(file) {
+      selectedFile = file;
+      outputBlob = null;
+      outputName = null;
+      downloadBtn.disabled = true;
+      compressBtn.disabled = !ffmpegReady;
+      inputSize.textContent = fmtBytes(file.size);
+      const dur = await probeDuration(file);
+      fileMeta.textContent = `${file.name}\nSize: ${fmtBytes(file.size)}\nDuration: ${fmtSecs(dur)}`;
+      const bit = estimateBitrate(dur);
+      bitrateLabel.textContent = bit ? `${bit.videoKbps} kbps video` : 'Need duration';
+      setStatus('File selected. Load the encoder if needed, then compress.');
+    }
+
+    function estimateBitrate(duration) {
+      if (!Number.isFinite(duration) || duration <= 0) return null;
+      const targetBytes = Number(targetSize.value) * 1024 * 1024 * Number(margin.value);
+      const audioKbps = audioMode.value === 'none' ? 0 : audioMode.value === 'aac-96' ? 96 : audioMode.value === 'copy' ? 96 : 64;
+      const totalKbps = Math.max(100, Math.floor((targetBytes * 8) / duration / 1000));
+      const videoKbps = Math.max(120, totalKbps - audioKbps);
+      return { targetBytes, totalKbps, videoKbps, audioKbps };
+    }
+
+    async function ensureFFmpeg() {
+      if (ffmpegReady) return;
+      loadBtn.disabled = true;
+      setStatus('Loading ffmpeg.wasm core... this can take a bit the first time.');
+      ffmpeg = new FFmpeg();
+      ffmpeg.on('log', ({ message }) => {
+        if (message && /time=|frame=|video:|muxing overhead/i.test(message)) status.textContent = message;
+      });
+      ffmpeg.on('progress', ({ progress: value }) => {
+        progress.value = value || 0;
+      });
+      const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      await ffmpeg.load({ coreURL: `${base}/ffmpeg-core.js`, wasmURL: `${base}/ffmpeg-core.wasm` });
+      ffmpegReady = true;
+      loadBtn.textContent = 'Encoder loaded';
+      compressBtn.disabled = !selectedFile;
+      setStatus('Encoder ready.');
+    }
+
+    async function compressVideo() {
+      if (!selectedFile) { setStatus('Choose a file first.'); return; }
+      await ensureFFmpeg();
+
+      compressBtn.disabled = true;
+      downloadBtn.disabled = true;
+      progress.value = 0;
+      outputBlob = null;
+      outputName = null;
+
+      const duration = await probeDuration(selectedFile);
+      const bitrate = estimateBitrate(duration);
+      if (!bitrate) {
+        setStatus('Could not read duration. Try a different file.');
+        compressBtn.disabled = false;
+        return;
+      }
+
+      targetLabel.textContent = `${targetSize.value} MB @ ${Math.round(Number(margin.value) * 100)}%`;
+      bitrateLabel.textContent = `${bitrate.videoKbps} kbps video`;
+
+      const inputExt = (selectedFile.name.split('.').pop() || 'mp4').toLowerCase();
+      const inputName = `input.${inputExt}`;
+      outputName = selectedFile.name.replace(/\.[^.]+$/, '') + '-discord-hevc.mp4';
+      const audioArgs = audioMode.value === 'none'
+        ? ['-an']
+        : audioMode.value === 'copy'
+          ? ['-c:a', 'copy']
+          : ['-c:a', 'aac', '-b:a', audioMode.value === 'aac-96' ? '96k' : '64k'];
+
+      setStatus(`Writing ${selectedFile.name} into ffmpeg memory...`);
+      try {
+        try { await ffmpeg.deleteFile(inputName); } catch {}
+        try { await ffmpeg.deleteFile(outputName); } catch {}
+        await ffmpeg.writeFile(inputName, await fetchFile(selectedFile));
+
+        const args = [
+          '-i', inputName,
+          '-map_metadata', '-1',
+          '-movflags', '+faststart',
+          '-c:v', 'libx265',
+          '-preset', preset.value,
+          '-b:v', `${bitrate.videoKbps}k`,
+          '-maxrate', `${Math.round(bitrate.videoKbps * 1.15)}k`,
+          '-bufsize', `${Math.round(bitrate.videoKbps * 2)}k`,
+          '-pix_fmt', 'yuv420p',
+          ...audioArgs,
+          outputName
+        ];
+
+        setStatus(`Compressing to HEVC...\nTarget video bitrate: ${bitrate.videoKbps} kbps\nEstimated duration: ${fmtSecs(duration)}`);
+        await ffmpeg.exec(args);
+        const data = await ffmpeg.readFile(outputName);
+        outputBlob = new Blob([data.buffer], { type: 'video/mp4' });
+        downloadBtn.disabled = false;
+        outputMeta.textContent = `${outputName}\nSize: ${fmtBytes(outputBlob.size)}\nOriginal: ${fmtBytes(selectedFile.size)}\nSaved: ${selectedFile.size > outputBlob.size ? fmtBytes(selectedFile.size - outputBlob.size) : '0 B'}`;
+        setStatus('Done. Review the output size and download the compressed file.');
+      } catch (err) {
+        console.error(err);
+        setStatus(`Compression failed. ${err?.message || err}`);
+      } finally {
+        compressBtn.disabled = false;
+      }
+    }
+
+    function downloadOutput() {
+      if (!outputBlob) return;
+      const url = URL.createObjectURL(outputBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outputName || 'discord-hevc.mp4';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    ['change','input'].forEach(evt => {
+      targetSize.addEventListener(evt, async () => {
+        targetLabel.textContent = `${targetSize.value} MB`;
+        if (selectedFile) await updateFileUI(selectedFile);
+      });
+      margin.addEventListener(evt, async () => { if (selectedFile) await updateFileUI(selectedFile); });
+      audioMode.addEventListener(evt, async () => { if (selectedFile) await updateFileUI(selectedFile); });
+    });
+
+    loadBtn.addEventListener('click', ensureFFmpeg);
+    compressBtn.addEventListener('click', compressVideo);
+    downloadBtn.addEventListener('click', downloadOutput);
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (file) await updateFileUI(file);
+    });
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    ;['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }));
+    ;['dragleave','drop'].forEach(type => dropzone.addEventListener(type, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }));
+    dropzone.addEventListener('drop', async (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file) await updateFileUI(file);
+    });
+
+    targetLabel.textContent = `${targetSize.value} MB`;
+  </script>
+</body>
+</html>
